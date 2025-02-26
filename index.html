@@ -2,85 +2,38 @@
 <html>
 
 <head>
-    <title>Video Call App</title>
+    <title>Chat App</title>
 </head>
 
 <body>
-    <h1>Video Call App</h1>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+    <form id="form">
+        hello
+        <input id="input" type="text">
+    </form>
+    <div id="messages"></div>
+    <!-- Add this div to display messages -->
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
 
-        // Get user media (video and audio)
-        navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            })
-            .then((stream) => {
-                const localVideo = document.getElementById('localVideo');
-                localVideo.srcObject = stream;
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messagesDiv = document.getElementById('messages'); // Get the messages div
 
-                // Create a peer connection
-                const peerConnection = new RTCPeerConnection({
-                    iceServers: [{
-                            urls: 'stun:stun.l.google.com:19302'
-                        }, // Google's public STUN server
-                        // Add your TURN server here if needed
-                    ],
-                });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+        });
 
-                // Add the local stream to the peer connection
-                stream.getTracks().forEach((track) => {
-                    peerConnection.addTrack(track, stream);
-                });
-
-                // Handle remote stream
-                peerConnection.ontrack = (event) => {
-                    const remoteVideo = document.getElementById('remoteVideo');
-                    remoteVideo.srcObject = event.streams[0];
-                };
-
-                // Exchange ICE candidates
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        socket.emit('signal', {
-                            candidate: event.candidate
-                        });
-                    }
-                };
-
-                // Handle signaling data from the server
-                socket.on('signal', (data) => {
-                    if (data.offer) {
-                        peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
-                            .then(() => peerConnection.createAnswer())
-                            .then((answer) => peerConnection.setLocalDescription(answer))
-                            .then(() => {
-                                socket.emit('signal', {
-                                    answer: peerConnection.localDescription
-                                });
-                            });
-                    } else if (data.answer) {
-                        peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    } else if (data.candidate) {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    }
-                });
-
-                // Start the call
-                peerConnection.createOffer()
-                    .then((offer) => peerConnection.setLocalDescription(offer))
-                    .then(() => {
-                        socket.emit('signal', {
-                            offer: peerConnection.localDescription
-                        });
-                    });
-            })
-            .catch((error) => {
-                console.error('Error accessing media devices:', error);
-            });
+        socket.on('msg', (arg) => {
+            const messageElement = document.createElement('p');
+            messageElement.textContent = arg;
+            messagesDiv.appendChild(messageElement); // Append messages to the div
+        });
     </script>
 </body>
 
