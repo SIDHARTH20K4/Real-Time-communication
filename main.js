@@ -9,7 +9,7 @@ const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'ind.html'));
 })
 
 io.on('connection', (socket) => {
