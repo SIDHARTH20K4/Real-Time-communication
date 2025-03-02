@@ -1,21 +1,42 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video call app</title>
+    <title>Video Call App</title>
 </head>
 
 <body>
+    <input type="text" id="nameInput" placeholder="Enter your name">
+    <button onclick="setUsername()">Submit</button>
+    <p id="output"></p>
+
     <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Send</button>
         <button id="toggle-btn">Disconnect</button>
     </form>
+
+    <button id="join-btn">Join Room</button>
+    <input type="text" id="messageInput" placeholder="Message here">
+    <button onclick="sendMessage()">Send Message</button>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const toggleButton = document.getElementById('toggle-btn');
+        const joinButton = document.getElementById('join-btn');
+
+        function setUsername() {
+            const inputElement = document.getElementById("nameInput");
+            const username = inputElement.value.trim(); // Trim spaces
+
+            if (username) {
+                socket.emit('setUsername', username);
+                document.getElementById("output").innerText = "You entered: " + username;
+            } else {
+                alert("Please enter a valid name.");
+            }
+        }
 
         toggleButton.addEventListener('click', (e) => {
             e.preventDefault();
@@ -27,6 +48,17 @@
                 socket.connect();
             }
         });
+
+        joinButton.addEventListener('click', () => {
+            socket.emit('connected to room', 'room1');
+        });
+
+        function sendMessage() {
+            const message = document.getElementById("messageInput").value.trim();
+            if (message) {
+                socket.emit('chat message', message);
+            }
+        }
     </script>
 </body>
 
