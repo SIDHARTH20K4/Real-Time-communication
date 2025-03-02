@@ -4,61 +4,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Call App</title>
+    <title>Chat App</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        
+        #chat-box {
+            width: 60%;
+            max-width: 500px;
+            margin: 20px auto;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #messages {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        input,
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        
+        #username {
+            width: 70%;
+        }
+        
+        #message {
+            width: 60%;
+        }
+    </style>
 </head>
 
 <body>
-    <input type="text" id="nameInput" placeholder="Enter your name">
-    <button onclick="setUsername()">Submit</button>
-    <p id="output"></p>
+    <h2>Simple Chat App</h2>
 
-    <form id="form" action="">
-        <button id="toggle-btn">Disconnect</button>
-    </form>
+    <div id="chat-box">
+        <input type="text" id="username" placeholder="Enter your name">
+        <button onclick="setUsername()">Set Name</button>
 
-    <button id="join-btn">Join Room</button>
-    <input type="text" id="messageInput" placeholder="Message here">
-    <button onclick="sendMessage()">Send Message</button>
+        <br>
 
-    <script src="/socket.io/socket.io.js"></script>
+        <input type="text" id="room" placeholder="Room Name">
+        <button onclick="joinRoom()">Join Room</button>
+
+        <br><br>
+
+        <div id="messages"></div>
+
+        <br>
+
+        <input type="text" id="message" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
     <script>
         const socket = io();
-        const toggleButton = document.getElementById('toggle-btn');
-        const joinButton = document.getElementById('join-btn');
+        let username = "";
 
+        // Function to set username
         function setUsername() {
-            const inputElement = document.getElementById("nameInput");
-            const username = inputElement.value.trim(); // Trim spaces
-
-            if (username) {
-                socket.emit('setUsername', username);
-                document.getElementById("output").innerText = "You entered: " + username;
-            } else {
-                alert("Please enter a valid name.");
+            const input = document.getElementById("username").value;
+            if (input.trim() !== "") {
+                username = input;
+                socket.emit("setUsername", username);
+                alert("Username set to: " + username);
             }
         }
 
-        toggleButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (socket.connected) {
-                toggleButton.innerText = 'Connect';
-                socket.disconnect();
-            } else {
-                toggleButton.innerText = 'Disconnect';
-                socket.connect();
+        // Function to join a room
+        function joinRoom() {
+            const room = document.getElementById("room").value;
+            if (room.trim() !== "") {
+                socket.emit("connected to room", room);
+                alert("Joined room: " + room);
             }
-        });
+        }
 
-        joinButton.addEventListener('click', () => {
-            socket.emit('connected to room', 'room1');
-        });
-
+        // Function to send a message
         function sendMessage() {
-            const message = document.getElementById("messageInput").value.trim();
-            if (message) {
-                socket.emit('chat message', message);
+            const messageInput = document.getElementById("message");
+            const message = messageInput.value;
+            if (message.trim() !== "") {
+                socket.emit("chat message", message);
+                messageInput.value = ""; // Clear input after sending
             }
         }
+
+        // Display messages received from server
+        socket.on("msg", (data) => {
+            const messagesDiv = document.getElementById("messages");
+            const newMessage = document.createElement("p");
+            newMessage.innerText = data;
+            messagesDiv.appendChild(newMessage);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll
+        });
+
+        // Handle user disconnection
+        socket.on("userDisconnected", (socketId, disconnectedUser) => {
+            const messagesDiv = document.getElementById("messages");
+            const disconnectMsg = document.createElement("p");
+            disconnectMsg.style.color = "red";
+            disconnectMsg.innerText = `${disconnectedUser} disconnected`;
+            messagesDiv.appendChild(disconnectMsg);
+        });
+
+        // Confirm connection
+        socket.on("connected", (message) => {
+            console.log(message);
+        });
     </script>
 </body>
 
